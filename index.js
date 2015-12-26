@@ -15,11 +15,6 @@
   module.exports = page;
 
   /**
-   * Detect click event
-   */
-  var clickEvent = ('undefined' !== typeof document) && document.ontouchstart ? 'touchstart' : 'click';
-
-  /**
    * To work properly with the URL
    * history.location generated polyfill in https://github.com/devote/HTML5-History-API
    */
@@ -159,9 +154,6 @@
     if (false === options.dispatch) dispatch = false;
     if (false === options.decodeURLComponents) decodeURLComponents = false;
     if (false !== options.popstate) window.addEventListener('popstate', onpopstate, false);
-    if (false !== options.click) {
-      document.addEventListener(clickEvent, onclick, false);
-    }
     if (true === options.hashbang) hashbang = true;
     if (!dispatch) return;
     var url = (hashbang && ~location.hash.indexOf('#!')) ? location.hash.substr(2) + location.search : location.pathname + location.search + location.hash;
@@ -179,7 +171,6 @@
     page.current = '';
     page.len = 0;
     running = false;
-    document.removeEventListener(clickEvent, onclick, false);
     window.removeEventListener('popstate', onpopstate, false);
   };
 
@@ -534,70 +525,6 @@
       }
     };
   })();
-  /**
-   * Handle "click" events.
-   */
-
-  function onclick(e) {
-
-    if (1 !== which(e)) return;
-
-    if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-    if (e.defaultPrevented) return;
-
-
-
-    // ensure link
-    var el = e.target;
-    while (el && 'A' !== el.nodeName) el = el.parentNode;
-    if (!el || 'A' !== el.nodeName) return;
-
-
-
-    // Ignore if tag has
-    // 1. "download" attribute
-    // 2. rel="external" attribute
-    if (el.hasAttribute('download') || el.getAttribute('rel') === 'external') return;
-
-    // ensure non-hash for the same path
-    var link = el.getAttribute('href');
-    if (!hashbang && el.pathname === location.pathname && (el.hash || '#' === link)) return;
-
-
-
-    // Check for mailto: in the href
-    if (link && link.indexOf('mailto:') > -1) return;
-
-    // check target
-    if (el.target) return;
-
-    // x-origin
-    if (!sameOrigin(el.href)) return;
-
-
-
-    // rebuild path
-    var path = el.pathname + el.search + (el.hash || '');
-
-    // strip leading "/[drive letter]:" on NW.js on Windows
-    if (typeof process !== 'undefined' && path.match(/^\/[a-zA-Z]:\//)) {
-      path = path.replace(/^\/[a-zA-Z]:\//, '/');
-    }
-
-    // same page
-    var orig = path;
-
-    if (path.indexOf(base) === 0) {
-      path = path.substr(base.length);
-    }
-
-    if (hashbang) path = path.replace('#!', '');
-
-    if (base && orig === path) return;
-
-    e.preventDefault();
-    page.show(orig);
-  }
 
   /**
    * Event button.
